@@ -1,0 +1,25 @@
+.ui.grid.main {
+    margin: 0.5rem;
+}
+
+.ui.structured.celled.table tr td, .ui.structured.celled.table tr th {
+    /* padding-top: 0.5rem;
+    padding-bottom: 0.5rem; */
+    font-size: 200%;
+}
+
+h1.ui.header {
+    font-size: 2.5rem;
+}
+
+.green-row {
+    background: #00bb00;
+}
+
+.gray-row {
+    background: #888888;
+}
+
+.error-row {
+    color: #dd0000;
+}

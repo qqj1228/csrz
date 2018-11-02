@@ -1,0 +1,36 @@
+{
+  "name": "csrz",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "electron .",
+    "pack": "electron-builder --dir",
+    "dist": "electron-builder"
+  },
+  "build": {
+    "buildDependenciesFromSource": true,
+    "asar": false,
+    "files": ["!log${/*}", "!excel${/*}", "!prodID${/*}", "!config${/*}"],
+    "npmRebuild": false,
+    "win": {
+      "target": "zip",
+      "icon": "./asset/img/tool_256px.ico"
+    }
+  },
+  "author": "Qian",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^3.0.6",
+    "electron-builder": "^20.28.4",
+    "eslint": "^5.8.0",
+    "eslint-config-airbnb-base": "^13.1.0",
+    "eslint-plugin-import": "^2.14.0"
+  },
+  "dependencies": {
+    "jquery": "^3.3.1",
+    "log4js": "^3.0.6",
+    "node-xlsx": "^0.12.1"
+  }
+}

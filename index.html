@@ -1,0 +1,55 @@
+<!doctype html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <link rel="stylesheet" type="text/css" href="./semantic/dist/semantic.min.css">
+        <link rel="stylesheet" type="text/css" href="./asset/css/index.css">
+        <script>window.$ = window.jQuery = require('jquery');</script>
+        <script src="./semantic/dist/semantic.min.js"></script>
+        <script src="./index.js"></script>
+        <title>长沙瑞智GMMC顺引指示系统</title>
+    </head>
+    <body>
+        <div class="ui grid main">
+            <div class="row">
+                <div class="four wide column"><div class="ui list">
+                    <div class="item">主胎指示票代码：<span id="sheetMain"></span></div>
+                    <div class="item">备胎指示票代码：<span id="sheetSpare"></span></div>
+                </div></div>
+                <div class="eight wide center aligned column">
+                    <h1 class="ui header">长沙瑞智GMMC顺引指示系统</h1>
+                </div>
+                <div class="four wide right aligned column"><div class="ui list">
+                        <div class="item">出货时间：<span id="shippingTime"></span></div>
+                        <div class="item">到货时间：<span id="arrivalTime"></span></div>
+                </div></div>
+            </div>
+            <div class="row">
+                <div class="ui green massive label">传感器ID<div class="detail" id="sensorID"></div></div>
+                <div class="ui green massive label">压力值<div class="detail" id="pressure"></div></div>
+                <div class="ui green massive label">当前轮胎数量<div class="detail" id="cuQty"></div></div>
+                <button class="huge ui inverted primary button" id="next-btn"><i class="arrow down icon"></i>手动下移</button>
+                <button class="huge ui inverted primary button" id="pre-btn"><i class="arrow up icon"></i>手动上移</button>
+                <button class="huge ui inverted primary button" id="load-btn"><i class="download icon"></i>加载文件</button>
+                <div class="ui red massive label hidden" id="error-title">注意<div class="detail" id="error-text"></div></div>
+            </div>
+            <div class="row">
+                <table class="ui celled structured inverted blue table">
+                    <thead class="center aligned">
+                        <tr>
+                            <th>NO</th>
+                            <th>顺序号</th>
+                            <th>主胎品番</th>
+                            <th>备胎品番</th>
+                            <th>指示日期</th>
+                            <th>指示时间</th>
+                            <th>备注</th>
+                        </tr>
+                    </thead>
+                    <tbody class="center aligned">
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </body>
+</html>
