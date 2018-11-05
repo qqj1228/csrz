@@ -21,10 +21,7 @@ for (let i = 0; i < process.argv.length; i++) {
     }
 }
 
-function createWindow() {
-    // 获取主显示设备分辨率
-    const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
-
+function createWindow(width, height) {
     // 创建浏览器窗口。
     win = new BrowserWindow({
         icon: `${__dirname}/asset/img/tool_256px.ico`,
@@ -50,6 +47,24 @@ function createWindow() {
     });
 }
 
+const gotTheLock = app.requestSingleInstanceLock();
+if (!gotTheLock) {
+    // 开始运行第二个实例
+    console.error('You should running this application with one instance');
+    app.quit();
+} else {
+    // 开始运行第一个实例
+    app.on('second-instance', () => {
+        // Someone tried to run a second instance, we should focus our window.
+        if (win) {
+            if (win.isMinimized()) {
+                win.restore();
+            }
+            win.focus();
+        }
+    });
+}
+
 // Electron 会在初始化后并准备
 // 创建浏览器窗口时，调用这个函数。
 // 部分 API 在 ready 事件触发后才能使用。
@@ -57,7 +72,14 @@ app.on('ready', () => {
     if (!isDev) {
         Menu.setApplicationMenu(null);
     }
-    createWindow();
+    // 获取主显示设备分辨率
+    try {
+        const {width, height} = electron.screen.getPrimaryDisplay().workAreaSize;
+        createWindow(width, height);
+    } catch (error) {
+        console.error(error.message);
+        app.quit();
+    }
     globalShortcut.register('CmdOrCtrl+shift+i', () => {
         win.webContents.openDevTools();
     });

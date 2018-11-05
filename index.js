@@ -2,6 +2,9 @@ const ipc = require('electron').ipcRenderer;
 const {ImportXlsx} = require('./import-xlsx');
 const {ImportProdID} = require('./import-prodID');
 const {UDPServer} = require('./UDP');
+const {TCPServer} = require('./TCP');
+// 获取package.json里的版本号
+const {version} = require('./package.json');
 
 const WHOLEROWS = 36; // 一个文件完整记录数量
 const ROWS = 12; // 每页显示记录数量
@@ -13,6 +16,7 @@ const gXlsx = new ImportXlsx(xlsxDir, WHOLEROWS);
 const gProd = new ImportProdID(prodIDFile);
 let gShowData = {};
 let gUdp = {};
+let gTCP = {};
 let gCurrentRow = 0; // 正在检测行
 let gTotalQty = 0; // 一个文件总记录数量
 
@@ -210,6 +214,7 @@ function jumpUncompleteRow() {
 
 // 显示程序UDP端口5678，OPC程序UDP端口8765
 gUdp = new UDPServer(5678, 8765, nextStep);
+gTCP = new TCPServer();
 
 function init() {
     console.info('init...');
@@ -233,6 +238,10 @@ $(() => {
     ipc.on('return-background-color', (event, arg) => {
         document.body.style.backgroundColor = arg;
     });
+    // 设置页面标题版本号
+    const {title} = document;
+    document.title = `${title} v${version}`;
+
     init();
 
     ipc.on('page-up', () => {
@@ -259,6 +268,7 @@ $(() => {
 
     window.addEventListener('beforeunload', () => {
         gUdp.server.close();
+        gTCP.server.close();
     });
 
     $('#next-btn').on('click', () => {

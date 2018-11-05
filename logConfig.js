@@ -18,6 +18,7 @@ log4js.configure({
             pattern: 'yyyy-MM-dd.log',
             // 包含模型
             alwaysIncludePattern: true,
+            daysToKeep: 100,
         },
     },
     categories: {
