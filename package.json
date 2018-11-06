@@ -1,6 +1,6 @@
 {
   "name": "csrz",
-  "version": "1.0.1",
+  "version": "2.0.0",
   "description": "",
   "main": "main.js",
   "scripts": {
@@ -12,7 +12,12 @@
   "build": {
     "buildDependenciesFromSource": true,
     "asar": false,
-    "files": ["!log${/*}", "!excel${/*}", "!prodID${/*}", "!config${/*}"],
+    "files": [
+      "!log${/*}",
+      "!excel${/*}",
+      "!prodID${/*}",
+      "!config${/*}"
+    ],
     "npmRebuild": false,
     "win": {
       "target": "zip",
@@ -30,6 +35,7 @@
   },
   "dependencies": {
     "jquery": "^3.3.1",
+    "localforage": "^1.7.3",
     "log4js": "^3.0.6",
     "node-xlsx": "^0.12.1"
   }

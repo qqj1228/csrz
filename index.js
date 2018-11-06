@@ -13,10 +13,12 @@ const xlsxDir = './excel'; // xlsx文件夹路径
 const prodIDFile = './prodID/prodID.xlsx'; // 品番-TPMSID对照表
 
 const gXlsx = new ImportXlsx(xlsxDir, WHOLEROWS);
+gXlsx.walk();
 const gProd = new ImportProdID(prodIDFile);
-let gShowData = {};
+let gShowData = [];
 let gUdp = {};
 let gTCP = {};
+let gUsingTCP = true;
 let gCurrentRow = 0; // 正在检测行
 let gTotalQty = 0; // 一个文件总记录数量
 
@@ -30,19 +32,26 @@ function fillTable(page) {
     if (end > gTotalQty) {
         end = gTotalQty;
     }
-    $('#sheetMain').text(gXlsx.tireData.main[0][2]);
-    $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
+    if (gUsingTCP) {
+        $('#sheetMain').text(gTCP.sheet[0].data[0][2]);
+        $('#sheetSpare').text(gTCP.sheet[0].data[0][6]);
+    } else {
+        $('#sheetMain').text(gXlsx.tireData.main[0][2]);
+        $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
+    }
     $('tbody').children().remove();
-    if (gXlsx.tireData.uncomplete.length > 0 && gTotalQty !== WHOLEROWS) {
-        $('#error-title').removeClass('hidden');
-        $('#error-text').text(`当前文件不完整，缺 ${WHOLEROWS - gTotalQty} 台车`);
-    } else if (gXlsx.tireData.uncomplete.length > 0 && gXlsx.tireData.continue) {
-        const row = gXlsx.tireData.uncomplete;
-        $('#error-title').removeClass('hidden');
-        $('#error-text').text(`接上一台 NO: ${row[0]}, 顺序号: ${row[1]}, 主胎品番: ${row[3]}`);
-        if (gCurrentRow === WHOLEROWS) {
-            // 完成处理上一车不完整数据的衔接后，删除不完整记录
-            gXlsx.tireData.uncomplete = [];
+    if (!gUsingTCP) {
+        if (gXlsx.tireData.uncomplete.length > 0 && gTotalQty !== WHOLEROWS) {
+            $('#error-title').removeClass('hidden');
+            $('#error-text').text(`当前文件不完整，缺 ${WHOLEROWS - gTotalQty} 台车`);
+        } else if (gXlsx.tireData.uncomplete.length > 0 && gXlsx.tireData.continue) {
+            const row = gXlsx.tireData.uncomplete;
+            $('#error-title').removeClass('hidden');
+            $('#error-text').text(`接上一台 NO: ${row[0]}, 顺序号: ${row[1]}, 主胎品番: ${row[3]}`);
+            if (gCurrentRow === WHOLEROWS) {
+                // 完成处理上一车不完整数据的衔接后，删除不完整记录
+                gXlsx.tireData.uncomplete = [];
+            }
         }
     }
     for (let i = start; i < end; i++) {
@@ -134,7 +143,11 @@ function getOPCMessage() {
         opcMessage += -1;
     }
     opcMessage += ',';
-    opcMessage += gXlsx.tireData.main[gCurrentRow][6] + gXlsx.tireData.spare[gCurrentRow][6];
+    if (gUsingTCP) {
+        opcMessage += (+gTCP.sheet[0].data[gCurrentRow][4]) + (+gTCP.sheet[0].data[gCurrentRow][8]);
+    } else {
+        opcMessage += gXlsx.tireData.main[gCurrentRow][6] + gXlsx.tireData.spare[gCurrentRow][6];
+    }
     opcMessage += ',0';
     return opcMessage;
 }
@@ -175,6 +188,31 @@ function sendOPCMessage() {
     gUdp.sendOPC();
 }
 
+function changeSheet() {
+    gTCP.changeSheet();
+    gShowData = [];
+    for (let i = 0; i < gTCP.sheet[0].data.length; i++) {
+        gShowData[i] = [
+            i + 1,
+            gTCP.sheet[0].data[i][1],
+            gTCP.sheet[0].data[i][3],
+            gTCP.sheet[0].data[i][7],
+            gTCP.sheet[0].data[i][10],
+            gTCP.sheet[0].data[i][11],
+            gTCP.sheet[0].data[i][12],
+            1,
+            gTCP.sheet[0].data[i][7] ? 0 : 1,
+        ];
+    }
+    gCurrentPage = 1;
+    gCurrentRow = 0;
+    gTotalQty = gTCP.sheet[0].data.length;
+    highLightShowData(gCurrentRow);
+    sendOPCMessage();
+    fillTable(gCurrentPage);
+    gCurrentRow += 1;
+}
+
 /**
  * 进入下一步
  * @param {boolean} isManual 是否用手动
@@ -193,11 +231,17 @@ function nextStep(isManual) {
         highLightShowData(gCurrentRow);
         sendOPCMessage();
     }
-    if (gCurrentRow % ROWS === 0) {
+    if (gCurrentRow % ROWS === 0 && gCurrentRow !== 0) {
         pageDown(false);
     }
     fillTable(gCurrentPage);
     gCurrentRow += 1;
+    if (gUsingTCP && gCurrentRow > WHOLEROWS) {
+        changeSheet();
+    }
+    if (gUsingTCP && gCurrentRow > gTotalQty) {
+        gCurrentRow = gTotalQty;
+    }
 }
 
 function jumpUncompleteRow() {
@@ -209,15 +253,39 @@ function jumpUncompleteRow() {
                 break;
             }
         }
+        highLightShowData(gCurrentRow);
+        sendOPCMessage();
+        gCurrentRow += 1;
     }
+}
+
+function handleTCP(socket) {
+    const NO = gTCP.sheet[0].data.length;
+    gTotalQty = NO;
+    gShowData.push([
+        NO,
+        gTCP.sheet[0].data[NO - 1][1],
+        gTCP.sheet[0].data[NO - 1][3],
+        gTCP.sheet[0].data[NO - 1][7],
+        gTCP.sheet[0].data[NO - 1][10],
+        gTCP.sheet[0].data[NO - 1][11],
+        gTCP.sheet[0].data[NO - 1][12],
+        1,
+        gTCP.sheet[0].data[NO - 1][7] ? 0 : 1,
+    ]);
+    if (gCurrentRow > 0) {
+        highLightShowData(gCurrentRow);
+        sendOPCMessage();
+    }
+    fillTable(gCurrentPage);
+    socket.write('1');
 }
 
 // 显示程序UDP端口5678，OPC程序UDP端口8765
 gUdp = new UDPServer(5678, 8765, nextStep);
-gTCP = new TCPServer();
 
-function init() {
-    console.info('init...');
+function initXlsx() {
+    console.info('initXlsx...');
     gCurrentPage = 1;
     gCurrentRow = 0;
     gXlsx.load();
@@ -226,10 +294,16 @@ function init() {
     gShowData = gXlsx.showData;
     jumpUncompleteRow();
     $('#error-title').addClass('hidden');
-    highLightShowData(gCurrentRow);
-    sendOPCMessage();
     fillTable(gCurrentPage);
-    gCurrentRow += 1;
+}
+
+function initTCP() {
+    console.info('initTCP...');
+    gCurrentPage = 1;
+    gCurrentRow = 0;
+    gProd.load();
+    gTCP = new TCPServer(handleTCP, WHOLEROWS);
+    $('#error-title').addClass('hidden');
 }
 
 $(() => {
@@ -242,7 +316,13 @@ $(() => {
     const {title} = document;
     document.title = `${title} v${version}`;
 
-    init();
+    if (gXlsx.fileList.length > 0) {
+        gUsingTCP = false;
+        initXlsx();
+    } else {
+        gUsingTCP = true;
+        initTCP();
+    }
 
     ipc.on('page-up', () => {
         pageUp(true);
@@ -255,7 +335,11 @@ $(() => {
     });
 
     ipc.on('load-xlsx', () => {
-        init();
+        if (gUsingTCP) {
+            gProd.load();
+        } else {
+            initXlsx();
+        }
     });
 
     ipc.on('manual-pre', () => {
@@ -280,6 +364,10 @@ $(() => {
     });
 
     $('#load-btn').on('click', () => {
-        init();
+        if (gUsingTCP) {
+            gProd.load();
+        } else {
+            initXlsx();
+        }
     });
 });

@@ -1,6 +1,12 @@
 const dgram = require('dgram');
 
 class UDPServer {
+    /**
+     * UDP功能类
+     * @param {number} portLocal 本地端口
+     * @param {number} portRemote 远程端口
+     * @callback callback 回调函数，当接收到符合要求的数据时，执行该函数
+     */
     constructor(portLocal, portRemote, callback) {
         this.portLocal = portLocal;
         this.portRemote = portRemote;

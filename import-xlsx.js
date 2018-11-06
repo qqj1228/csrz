@@ -35,11 +35,11 @@ class ImportXlsx {
     }
 
     load() {
-        this.walk(this.xlsxDir);
+        this.walk();
         this.xlsxParse();
     }
 
-    walk(path) {
+    walk(path = this.xlsxDir) {
         const dirList = fs.readdirSync(path);
         this.fileList = [];
 
@@ -57,6 +57,9 @@ class ImportXlsx {
     }
 
     xlsxParse() {
+        if (this.fileList.length <= 0) {
+            return;
+        }
         const tmp = xlsx.parse(this.fileList[0]);
         // 加载主/备胎xlsx数据
         const index = tmp[0].data[0].indexOf('部品类型');
@@ -135,6 +138,9 @@ class ImportXlsx {
      */
     get showData() {
         const showData = [];
+        if (this.fileList.length <= 0) {
+            return showData;
+        }
         for (let i = 0; i < this.totalQty; i++) {
             // 查找与主胎对应的备胎索引
             const s = this.tireData.main[i][1];
