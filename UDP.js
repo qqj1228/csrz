@@ -1,4 +1,7 @@
 const dgram = require('dgram');
+const {logger} = require('./logConfig');
+
+const logging = logger('UDP.js');
 
 class UDPServer {
     /**
@@ -18,13 +21,15 @@ class UDPServer {
 
         // 监听端口
         this.server.on('listening', () => {
-            console.info(`udp server linstening on UDP port: ${this.portLocal}`);
+            console.info(`UDP linstening on UDP port: ${this.portLocal}`);
+            logging.info(`UDP linstening on UDP port: ${this.portLocal}`);
         });
 
         // 接收消息
         this.server.on('message', (msg, rinfo) => {
             const strmsg = msg.toString();
-            console.info(`udp server received data: "${strmsg}" from ${rinfo.address}:${rinfo.port}`);
+            console.info(`UDP received data: "${strmsg}" from ${rinfo.address}:${rinfo.port}`);
+            logging.info(`UDP received data: "${strmsg}" from ${rinfo.address}:${rinfo.port}`);
             if (strmsg.indexOf('C,') === 0) {
                 this.recvMessage = strmsg.split(',');
                 callback(false);
@@ -34,7 +39,7 @@ class UDPServer {
         // 错误处理
         this.server.on('error', (err) => {
             console.error(`${err.message}`);
-            this.server.close();
+            logging.error(`${err.message}`);
         });
     }
 
@@ -44,16 +49,18 @@ class UDPServer {
      */
     sendMessage(message) {
         this.server.send(message, this.portRemote, '127.0.0.1');
+        console.info(`UDP sended data: "${this.opcMessage}" to 127.0.0.1:${this.portRemote}`);
+        logging.info(`UDP sended data: "${this.opcMessage}" to 127.0.0.1:${this.portRemote}`);
     }
 
     /**
      * 发送数据给OPC程序
      * 发送数据文本格式'flag,ItemIDSensorID,ItemIDQty,ItemIDClear'，flag恒为“C”
+     * @param {boolean} force 是否要强制发送OPC消息
      */
-    sendOPC() {
-        if (this.recvMessage[1] === '1') {
+    sendOPC(force) {
+        if (this.recvMessage[1] === '1' || force) {
             this.sendMessage(this.opcMessage);
-            console.info(this.opcMessage);
         }
     }
 }
