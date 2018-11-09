@@ -7,9 +7,11 @@ const {TCPServer} = require('./TCP');
 // 获取package.json里的版本号
 const {version} = require('./package.json');
 
-const WHOLEROWS = 36; // 一个文件完整记录数量
+const WHOLEROWS = 36; // 一张指示票完整记录数量
 const ROWS = 12; // 每页显示记录数量
 const PERIOD = 85; // 一辆车生产周期，秒
+const STOCKTIME = 128; // 备货时间，分钟
+const TRANSTIME = 40; // 运输时间，分钟
 let gCurrentPage = 1; // 当前显示页
 const xlsxDir = './excel'; // xlsx文件夹路径
 const prodIDFile = './prodID/prodID.xlsx'; // 品番-TPMSID对照表
@@ -29,15 +31,13 @@ let gIsEnd = false; // 到达指示票末尾
 /**
  * 计算出货时间和到货时间, 返回值格式[出货时间, 到货时间], 包含日期的完整字符串
  * @param {string} firstTime 首台车时间，包含日期的完整字符串
- * @param {number} stockTime 备货时间，分钟
- * @param {number} transTime 运输时间，分钟
  */
-function CalTime(firstTime, stockTime = 128, transTime = 40) {
+function CalTime(firstTime) {
     const time = [];
     const t = new Date(firstTime);
-    t.setMinutes(t.getMinutes() + stockTime, WHOLEROWS * PERIOD);
+    t.setMinutes(t.getMinutes() + STOCKTIME, WHOLEROWS * PERIOD);
     time[0] = t.toLocaleString('zh-CN', {hour12: false});
-    t.setMinutes(t.getMinutes() + transTime);
+    t.setMinutes(t.getMinutes() + TRANSTIME);
     time[1] = t.toLocaleString('zh-CN', {hour12: false});
     return time;
 }
