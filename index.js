@@ -9,6 +9,7 @@ const {version} = require('./package.json');
 
 const WHOLEROWS = 36; // 一个文件完整记录数量
 const ROWS = 12; // 每页显示记录数量
+const PERIOD = 85; // 一辆车生产周期，秒
 let gCurrentPage = 1; // 当前显示页
 const xlsxDir = './excel'; // xlsx文件夹路径
 const prodIDFile = './prodID/prodID.xlsx'; // 品番-TPMSID对照表
@@ -26,6 +27,22 @@ let gTotalQty = 0; // 一张指示票总记录数量
 let gIsEnd = false; // 到达指示票末尾
 
 /**
+ * 计算出货时间和到货时间, 返回值格式[出货时间, 到货时间], 包含日期的完整字符串
+ * @param {string} firstTime 首台车时间，包含日期的完整字符串
+ * @param {number} stockTime 备货时间，分钟
+ * @param {number} transTime 运输时间，分钟
+ */
+function CalTime(firstTime, stockTime = 128, transTime = 40) {
+    const time = [];
+    const t = new Date(firstTime);
+    t.setMinutes(t.getMinutes() + stockTime, WHOLEROWS * PERIOD);
+    time[0] = t.toLocaleString('zh-CN', {hour12: false});
+    t.setMinutes(t.getMinutes() + transTime);
+    time[1] = t.toLocaleString('zh-CN', {hour12: false});
+    return time;
+}
+
+/**
  * 填充页面表格数据
  * @param {number} page 当前页数，从1开始
  */
@@ -39,10 +56,16 @@ function fillTable(page) {
         if (gTCP.sheet.length > 0) {
             $('#sheetMain').text(gTCP.sheet[0][2]);
             $('#sheetSpare').text(gTCP.sheet[0][6]);
+            const time = CalTime(`${gTCP.sheet[0][10]} ${gTCP.sheet[0][11]}`);
+            $('#shippingTime').text(time[0]);
+            $('#arrivalTime').text(time[1]);
         }
     } else {
         $('#sheetMain').text(gXlsx.tireData.main[0][2]);
         $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
+        const time = CalTime(`${gXlsx.tireData.main[0][3]} ${gXlsx.tireData.main[0][4]}`);
+        $('#shippingTime').text(time[0]);
+        $('#arrivalTime').text(time[1]);
     }
     $('tbody').children().remove();
     if (!gUsingTCP) {
@@ -397,9 +420,12 @@ $(() => {
         nextStep(true);
     });
 
+    // 页面被刷新之前
     window.addEventListener('beforeunload', () => {
         gUdp.server.close();
-        gTCP.server.close();
+        if (gTCP.server) {
+            gTCP.server.close();
+        }
     });
 
     $('#next-btn').on('click', () => {

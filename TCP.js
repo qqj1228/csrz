@@ -80,10 +80,6 @@ class TCPServer {
         });
     }
 
-    close() {
-        this.server.close();
-    }
-
     changeSheet() {
         try {
             const sheetBuf = JSON.parse(localStorage.getItem('sheetBuf'));
