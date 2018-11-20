@@ -19,18 +19,28 @@
                 <div class="eight wide center aligned column">
                     <h1 class="ui header">长沙瑞智GMMC顺引指示系统</h1>
                 </div>
-                <div class="four wide right aligned column"><div class="ui list">
-                        <div class="item">出货时间：<span id="shippingTime"></span></div>
-                        <div class="item">到货时间：<span id="arrivalTime"></span></div>
-                </div></div>
+                <!-- <div class="four wide right aligned column"><div class="ui list">
+                    <div class="item">出货时间：<span id="shippingTime"></span></div>
+                    <div class="item">到货时间：<span id="arrivalTime"></span></div>
+                </div></div> -->
+                <div class="four wide right aligned column">
+                    <div class="ui big red label">广汽三菱</div>
+                    <i class="big icons" id="statusIcon">
+                        <i class="large red dont icon"></i>
+                        <i class="exchange icon"></i>
+                    </i>
+                    <div class="ui big red label">长沙瑞智</div>
+                </div>
             </div>
             <div class="row">
-                <div class="ui green massive label">传感器ID<div class="detail" id="sensorID"></div></div>
-                <div class="ui green massive label">压力值<div class="detail" id="pressure"></div></div>
+                <!-- <div class="ui green massive label">传感器ID<div class="detail" id="sensorID"></div></div>
+                <div class="ui green massive label">压力值<div class="detail" id="pressure"></div></div> -->
                 <div class="ui green massive label">当前轮胎数量<div class="detail" id="cuQty"></div></div>
-                <button class="huge ui inverted primary button" id="next-btn"><i class="arrow down icon"></i>手动下移</button>
-                <button class="huge ui inverted primary button" id="pre-btn"><i class="arrow up icon"></i>手动上移</button>
-                <button class="huge ui inverted primary button" id="load-btn"><i class="download icon"></i>加载文件</button>
+                <button class="huge ui primary button" id="next-btn"><i class="arrow down icon"></i>手动下移</button>
+                <button class="huge ui primary button" id="pre-btn"><i class="arrow up icon"></i>手动上移</button>
+                <button class="huge ui primary button" id="next-sheet-btn"><i class="arrow circle down icon"></i>下一票</button>
+                <button class="huge ui primary button" id="load-btn"><i class="download icon"></i>加载文件</button>
+                <button class="huge ui button" id="start-btn"><i class="play icon"></i>开始</button>
                 <div class="ui red massive label hidden" id="error-title">注意<div class="detail" id="error-text"></div></div>
             </div>
             <div class="row">
@@ -49,6 +59,13 @@
                     <tbody class="center aligned">
                     </tbody>
                 </table>
+            </div>
+            <div class="ui small modal">
+                <div class="header">是否确定要进入下一票？进入后无法返回上一票！</div>
+                <div class="actions">
+                    <div class="ui primary ok button"><i class="checkmark icon"></i>确定</div>
+                    <div class="ui cancel button"><i class="remove icon"></i>取消</div>
+                </div>
             </div>
         </div>
     </body>

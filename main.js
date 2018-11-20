@@ -92,11 +92,17 @@ app.on('ready', () => {
     globalShortcut.register('CmdOrCtrl+L', () => {
         win.webContents.send('load-xlsx');
     });
-    globalShortcut.register('CmdOrCtrl+P', () => {
+    globalShortcut.register('CmdOrCtrl+Up', () => {
         win.webContents.send('manual-pre');
     });
-    globalShortcut.register('CmdOrCtrl+N', () => {
+    globalShortcut.register('CmdOrCtrl+Down', () => {
         win.webContents.send('manual-next');
+    });
+    globalShortcut.register('CmdOrCtrl+Shift+R', () => {
+        win.webContents.send('restart-TCPServer');
+    });
+    globalShortcut.register('CmdOrCtrl+Shift+P', () => {
+        win.webContents.send('print-csv');
     });
 });
 
@@ -122,4 +128,16 @@ app.on('activate', () => {
 
 ipcMain.on('get-background-color', () => {
     win.webContents.send('return-background-color', systemPreferences.getColor('window'));
+});
+
+ipcMain.on('restart-TCPServer', () => {
+    win.webContents.send('restart-TCPServer');
+});
+
+ipcMain.on('TCP-closed', () => {
+    win.webContents.send('TCP-closed');
+});
+
+ipcMain.on('TCP-connected', () => {
+    win.webContents.send('TCP-connected');
 });

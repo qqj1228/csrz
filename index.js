@@ -4,6 +4,7 @@ const {ImportXlsx} = require('./import-xlsx');
 const {ImportProdID} = require('./import-prodID');
 const {UDPServer} = require('./UDP');
 const {TCPServer} = require('./TCP');
+const {PrintCSV} = require('./printCSV');
 // 获取package.json里的版本号
 const {version} = require('./package.json');
 
@@ -24,9 +25,10 @@ let gShowData = [];
 let gUdp = {};
 let gTCP = {};
 let gUsingTCP = true; // 是否使用TCP接受轮胎数据
-let gCurrentRow = 0; // 正在检测行
+let gCurrentRow = 0; // 正在检测行，显示后即为下一个将要检测行
 let gTotalQty = 0; // 一张指示票总记录数量
 let gIsEnd = false; // 到达指示票末尾
+let gCanRun = false; // 是否可以运行
 
 /**
  * 计算出货时间和到货时间, 返回值格式[出货时间, 到货时间], 包含日期的完整字符串
@@ -42,6 +44,11 @@ function CalTime(firstTime) {
     return time;
 }
 
+function printCSV(sheetName) {
+    const csv = new PrintCSV(gProd.resultFile, gProd.printDir, sheetName);
+    csv.go();
+}
+
 /**
  * 填充页面表格数据
  * @param {number} page 当前页数，从1开始
@@ -54,6 +61,9 @@ function fillTable(page) {
     }
     if (gUsingTCP) {
         if (gTCP.sheet.length > 0) {
+            if ($('#sheetMain').text() !== gTCP.sheet[0][2]) {
+                printCSV(gTCP.sheet[0][2]);
+            }
             $('#sheetMain').text(gTCP.sheet[0][2]);
             $('#sheetSpare').text(gTCP.sheet[0][6]);
             const time = CalTime(`${gTCP.sheet[0][10]} ${gTCP.sheet[0][11]}`);
@@ -61,6 +71,9 @@ function fillTable(page) {
             $('#arrivalTime').text(time[1]);
         }
     } else {
+        if ($('#sheetMain').text() !== gXlsx.tireData.main[0][2]) {
+            printCSV(gXlsx.tireData.main[0][2]);
+        }
         $('#sheetMain').text(gXlsx.tireData.main[0][2]);
         $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
         const time = CalTime(`${gXlsx.tireData.main[0][3]} ${gXlsx.tireData.main[0][4]}`);
@@ -75,7 +88,7 @@ function fillTable(page) {
         } else if (gXlsx.tireData.uncomplete.length > 0 && gXlsx.tireData.continue) {
             const row = gXlsx.tireData.uncomplete;
             $('#error-title').removeClass('hidden');
-            $('#error-text').text(`接上一台 NO: ${row[0]}, 顺序号: ${row[1]}, 主胎品番: ${row[3]}`);
+            $('#error-text').text(`接上一个不完整文件记录 NO: ${row[0]}, 顺序号: ${row[1]}, 主胎品番: ${row[3]}`);
             if (gCurrentRow === WHOLEROWS) {
                 // 完成处理上一车不完整数据的衔接后，删除不完整记录
                 gXlsx.tireData.uncomplete = [];
@@ -118,17 +131,11 @@ function fillTable(page) {
  * 检测是否有sheetBuf，有返回true，没有返回false
  */
 function testBuf() {
-    try {
-        const sheetBuf = JSON.parse(localStorage.getItem('sheetBuf'));
-        if (sheetBuf.length > 0) {
-            return true;
-        }
-        return false;
-    } catch (error) {
-        console.error(error.message);
-        logging.error(error.message);
-        return false;
+    const sheetBuf = JSON.parse(localStorage.getItem('sheetBuf'));
+    if (sheetBuf && sheetBuf.length > 0) {
+        return true;
     }
+    return false;
 }
 
 /**
@@ -185,9 +192,10 @@ function getOPCMessage() {
     }
     // flag,恒为"C"
     let opcMessage = 'C,';
-    const prodID = gProd.prodIDData[gShowData[gCurrentRow][2]];
+    const prodID = gProd.prodIDData[gShowData[gCurrentRow][2]][0];
+    const qtyMod = gProd.prodIDData[gShowData[gCurrentRow][2]][1];
     // TPMS传感器编号
-    if (prodID) {
+    if (prodID >= 0) {
         opcMessage += prodID;
     } else {
         opcMessage += -1;
@@ -195,9 +203,9 @@ function getOPCMessage() {
     opcMessage += ',';
     // 轮胎数量
     if (gUsingTCP) {
-        opcMessage += (+gTCP.sheet[gCurrentRow][4]) + (+gTCP.sheet[gCurrentRow][8]);
+        opcMessage += (+gTCP.sheet[gCurrentRow][4]) + (+gTCP.sheet[gCurrentRow][8]) + qtyMod;
     } else {
-        opcMessage += gXlsx.tireData.main[gCurrentRow][6] + gXlsx.tireData.spare[gCurrentRow][6];
+        opcMessage += gXlsx.tireData.main[gCurrentRow][6] + gXlsx.tireData.spare[gCurrentRow][6] + qtyMod;
     }
     // 轮胎计数清零
     opcMessage += ',0,';
@@ -230,6 +238,7 @@ function preStep() {
     if (gCurrentRow > gTotalQty) {
         gCurrentRow = gTotalQty;
     }
+    localStorage.setItem('currentRow', gCurrentRow);
 }
 
 /**
@@ -246,9 +255,12 @@ function sendOPCMessage(force) {
 }
 
 function changeSheet() {
+    gTCP.changeSheet();
+    if (!gTCP.sheet || gTCP.sheet.length === 0) {
+        return;
+    }
     console.info(`change sheet to ${gTCP.sheet[0][2]}`);
     logging.info(`change sheet to ${gTCP.sheet[0][2]}`);
-    gTCP.changeSheet();
     gShowData = [];
     for (let i = 0; i < gTCP.sheet.length; i++) {
         gShowData[i] = [
@@ -270,6 +282,7 @@ function changeSheet() {
     sendOPCMessage(false);
     fillTable(gCurrentPage);
     gCurrentRow += 1;
+    gIsEnd = false;
 }
 
 /**
@@ -281,7 +294,7 @@ function nextStep(isManual) {
     if (isManual) {
         highLightShowData(gCurrentRow);
     } else {
-        if (gUdp.recvMessage[1] !== '1') {
+        if (gUdp.recvMessage[1] !== '1' || !gCanRun) {
             return;
         }
         $('#error-title').addClass('hidden');
@@ -293,15 +306,20 @@ function nextStep(isManual) {
     }
     fillTable(gCurrentPage);
     gCurrentRow += 1;
-    if (gUsingTCP && gCurrentRow > WHOLEROWS) {
-        changeSheet();
-    }
-    if (gUsingTCP && gCurrentRow > gTotalQty) {
-        gCurrentRow = gTotalQty;
-        if (testBuf()) {
-            changeSheet();
+    if (!isManual) {
+        if (gUsingTCP && gCurrentRow > WHOLEROWS) {
+            if (testBuf()) {
+                changeSheet();
+            }
+        }
+        if (gUsingTCP && gCurrentRow > gTotalQty) {
+            gCurrentRow = gTotalQty;
+            if (testBuf()) {
+                changeSheet();
+            }
         }
     }
+    localStorage.setItem('currentRow', gCurrentRow);
 }
 
 function jumpUncompleteRow() {
@@ -339,7 +357,46 @@ function handleTCP(socket) {
     } else {
         fillTable(gCurrentPage);
     }
+    fillTable(gCurrentPage);
     socket.write('1');
+}
+
+/**
+ * 恢复现场数据
+ */
+function restore() {
+    gTCP.sheet = JSON.parse(localStorage.getItem('sheetShow'));
+    if (!gTCP.sheet) {
+        gTCP.sheet = [];
+        changeSheet();
+    }
+    gCurrentRow = JSON.parse(localStorage.getItem('currentRow'));
+    if (!gCurrentRow) {
+        gCurrentRow = 1;
+    }
+    if (gTCP.sheet.length > 0) {
+        const NO = gTCP.sheet.length;
+        gTotalQty = NO;
+        for (let i = 0; i < gTCP.sheet.length; i++) {
+            gShowData.push([
+                i + 1,
+                gTCP.sheet[i][1],
+                gTCP.sheet[i][3],
+                gTCP.sheet[i][7],
+                gTCP.sheet[i][10],
+                gTCP.sheet[i][11],
+                gTCP.sheet[i][12],
+                1,
+                gTCP.sheet[i][7] ? 0 : 1,
+            ]);
+        }
+    }
+    highLightShowData(gCurrentRow - 1);
+    gCurrentPage = Math.ceil(gCurrentRow / ROWS);
+    if (gCurrentPage === 0) {
+        gCurrentPage = 1;
+    }
+    fillTable(gCurrentPage);
 }
 
 // 显示程序UDP端口5678，OPC程序UDP端口8765
@@ -373,6 +430,7 @@ function initTCP() {
     gIsEnd = false;
     gProd.load();
     gTCP = new TCPServer(handleTCP, WHOLEROWS);
+    restore();
     $('#error-title').addClass('hidden');
 }
 
@@ -420,6 +478,30 @@ $(() => {
         nextStep(true);
     });
 
+    ipc.on('restart-TCPServer', () => {
+        console.info('Restart TCPServer...');
+        logging.info('Restart TCPServer...');
+        if (gTCP.server) {
+            gTCP.server.close();
+        }
+        gTCP = null;
+        gTCP = new TCPServer(handleTCP, WHOLEROWS);
+    });
+
+    ipc.on('TCP-closed', () => {
+        $('.big.label').removeClass('green').addClass('red');
+        $('#statusIcon').prepend('<i class="large red dont icon"></i>');
+    });
+
+    ipc.on('TCP-connected', () => {
+        $('.big.label').removeClass('red').addClass('green');
+        $('.dont.icon').remove();
+    });
+
+    ipc.on('print-csv', () => {
+        printCSV($('#sheetMain').text());
+    });
+
     // 页面被刷新之前
     window.addEventListener('beforeunload', () => {
         gUdp.server.close();
@@ -441,6 +523,24 @@ $(() => {
             gProd.load();
         } else {
             initXlsx();
+        }
+    });
+
+    $('#next-sheet-btn').on('click', () => {
+        if (gUsingTCP) {
+            $('.ui.small.modal').modal({
+                onApprove: () => { changeSheet(); },
+            }).modal('show');
+        }
+    });
+
+    $('#start-btn').on('click', () => {
+        if (gCanRun) {
+            gCanRun = false;
+            $('#start-btn').removeClass('primary');
+        } else {
+            gCanRun = true;
+            $('#start-btn').addClass('primary');
         }
     });
 });
