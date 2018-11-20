@@ -13,6 +13,7 @@
     "buildDependenciesFromSource": true,
     "asar": false,
     "files": [
+      "!.vscode${/*}",
       "!log${/*}",
       "!excel${/*}",
       "!prodID${/*}",

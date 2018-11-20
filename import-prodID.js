@@ -25,13 +25,13 @@ class ImportProdID {
         const tmp = xlsx.parse(this.prodIDFile);
         this.prodIDIndex = tmp[0].data[0].indexOf('品番');
         this.sensorIDIndex = tmp[0].data[0].indexOf('TPMS传感器编号');
-        this.qtyIndex = tmp[0].data[0].indexOf('轮胎数量调整');
+        this.qtyModIndex = tmp[0].data[0].indexOf('轮胎数量调整');
         this.resultIndex = tmp[2].data[0].indexOf('result_file');
         this.printIndex = tmp[2].data[0].indexOf('print_dir');
         this.prodIDData = {};
         let qtyMod = 0;
         for (let i = 1; i < tmp[0].data.length; i++) {
-            qtyMod = Number.isNaN(+tmp[0].data[i][this.qtyIndex]) ? 0 : (+tmp[0].data[i][this.qtyIndex]);
+            qtyMod = Number.isNaN(+tmp[0].data[i][this.qtyModIndex]) ? 0 : (+tmp[0].data[i][this.qtyModIndex]);
             this.prodIDData[tmp[0].data[i][this.prodIDIndex]] = [+tmp[0].data[i][this.sensorIDIndex], qtyMod];
         }
         this.resultFile = tmp[2].data[1][this.resultIndex];
