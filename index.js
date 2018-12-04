@@ -229,6 +229,8 @@ function showMessage() {
  * 手动回退上一步
  */
 function preStep() {
+    console.info('Manual preStep');
+    logging.info('Manual preStep');
     gCurrentRow -= 2;
     if (gCurrentRow < 0) {
         gCurrentRow = 0;
@@ -308,6 +310,8 @@ function changeSheet() {
 function nextStep(isManual) {
     showMessage();
     if (isManual) {
+        console.info('Manual nextStep');
+        logging.info('Manual nextStep');
         highLightShowData(gCurrentRow);
     } else {
         if (gUdp.lastMessage[1] !== '0' || gUdp.recvMessage[1] !== '1' || !gCanRun) {
