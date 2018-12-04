@@ -3,7 +3,7 @@ const {logger} = require('./logConfig');
 const {ImportXlsx} = require('./import-xlsx');
 const {ImportProdID} = require('./import-prodID');
 const {UDPServer} = require('./UDP');
-const {TCPServer} = require('./TCP');
+const {TCPServer, TCPClient} = require('./TCP');
 const {PrintCSV} = require('./printCSV');
 // 获取package.json里的版本号
 const {version} = require('./package.json');
@@ -24,6 +24,7 @@ const gProd = new ImportProdID(prodIDFile);
 let gShowData = [];
 let gUdp = {};
 let gTCP = {};
+let gTCPVIN = {};
 let gUsingTCP = true; // 是否使用TCP接受轮胎数据
 let gCurrentRow = 0; // 正在检测行，显示后即为下一个将要检测行
 let gTotalQty = 0; // 一张指示票总记录数量
@@ -192,8 +193,11 @@ function getOPCMessage() {
     }
     // flag,恒为"C"
     let opcMessage = 'C,';
-    const prodID = gProd.prodIDData[gShowData[gCurrentRow][2]][0];
-    const qtyMod = gProd.prodIDData[gShowData[gCurrentRow][2]][1];
+    let prodID = -1;
+    let qtyMod = 0;
+    if (gProd.prodIDData[gShowData[gCurrentRow][2]]) {
+        [prodID, qtyMod] = gProd.prodIDData[gShowData[gCurrentRow][2]];
+    }
     // TPMS传感器编号
     if (prodID >= 0) {
         opcMessage += prodID;
@@ -254,6 +258,17 @@ function sendOPCMessage(force) {
     gUdp.sendOPC(force);
 }
 
+/**
+ * 发送VIN消息
+ */
+function sendVINMessage() {
+    if (gCurrentRow >= gTotalQty) {
+        return;
+    }
+    gTCPVIN.sendData = `VIN=${gTCP.sheet[gCurrentRow][0]},PROD=${gTCP.sheet[gCurrentRow][3]},`;
+    gTCPVIN.send('');
+}
+
 function changeSheet() {
     gTCP.changeSheet();
     if (!gTCP.sheet || gTCP.sheet.length === 0) {
@@ -280,6 +295,7 @@ function changeSheet() {
     gTotalQty = gTCP.sheet.length;
     highLightShowData(gCurrentRow);
     sendOPCMessage(false);
+    sendVINMessage();
     fillTable(gCurrentPage);
     gCurrentRow += 1;
     gIsEnd = false;
@@ -294,12 +310,13 @@ function nextStep(isManual) {
     if (isManual) {
         highLightShowData(gCurrentRow);
     } else {
-        if (gUdp.recvMessage[1] !== '1' || !gCanRun) {
+        if (gUdp.lastMessage[1] !== '0' || gUdp.recvMessage[1] !== '1' || !gCanRun) {
             return;
         }
         $('#error-title').addClass('hidden');
         highLightShowData(gCurrentRow);
         sendOPCMessage(false);
+        sendVINMessage();
     }
     if (gCurrentRow % ROWS === 0 && gCurrentRow !== 0) {
         pageDown(false);
@@ -430,6 +447,7 @@ function initTCP() {
     gIsEnd = false;
     gProd.load();
     gTCP = new TCPServer(handleTCP, WHOLEROWS);
+    gTCPVIN = new TCPClient();
     restore();
     $('#error-title').addClass('hidden');
 }

@@ -17,6 +17,7 @@ class UDPServer {
         this.server.bind(+this.portLocal);
         this.opcMessage = '';
         this.recvMessage = []; // 需要显示的数组，字符串格式，[flag, ItemIDComplete, ItemIDClear, SensorID, Press]
+        this.lastMessage = []; // 上一次接收的数据，格式同上
         this.callback = callback; // 接收ItemIDComplete消息后的回调函数
 
         // 监听端口
@@ -33,6 +34,7 @@ class UDPServer {
             if (strmsg.indexOf('C,') === 0) {
                 this.recvMessage = strmsg.split(',');
                 callback(false);
+                this.lastMessage = this.recvMessage;
             }
         });
 
@@ -59,7 +61,7 @@ class UDPServer {
      * @param {boolean} force 是否要强制发送OPC消息
      */
     sendOPC(force) {
-        if (this.recvMessage[1] === '1' || force) {
+        if ((this.lastMessage[1] === '0' && this.recvMessage[1] === '1') || force) {
             this.sendMessage(this.opcMessage);
         }
     }

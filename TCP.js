@@ -1,10 +1,17 @@
 const ipc = require('electron').ipcRenderer;
 const net = require('net');
+const fs = require('fs');
 const {logger} = require('./logConfig');
 
 const logging = logger('TCP.js');
 
 const MAXSHEETQTY = 100;
+
+// 默认发送VIN码配置
+let VINConfig = {
+    server: '127.0.0.1',
+    port: 2501,
+};
 
 /**
  * 比较函数，升序
@@ -216,6 +223,93 @@ class TCPServer {
     }
 }
 
+class TCPClient {
+    /**
+     * TCP客户端类，用于向TPMS检测客户端发送VIN码和主胎品番
+     */
+    constructor() {
+        // 读取./config/VIN.json文件
+        let path = './config/VIN.json';
+        if (fs.existsSync(path)) {
+            VINConfig = JSON.parse(fs.readFileSync(path, 'utf8'));
+        } else {
+            path = `${__dirname}/config/VIN.json`;
+            if (fs.existsSync(path)) {
+                console.info(`Using ${__dirname}/config/VIN.json`);
+                logging.info(`Using ${__dirname}/config/VIN.json`);
+                VINConfig = JSON.parse(fs.readFileSync(path, 'utf8'));
+            } else {
+                console.warn('Can not find "/config/VIN.json", using default VINConfig setting.');
+                logging.warn('Can not find "/config/VIN.json", using default VINConfig setting.');
+            }
+        }
+
+        this.server = VINConfig.server;
+        this.port = VINConfig.port;
+        // 发送的数据格式：'VIN=VIN码,PROD=主胎品番,'，例如：'VIN=LL66HAB09JB140779,PROD=4250C401,'
+        // 服务端返回的数据格式：'OK'
+        this.sendData = '';
+        // 已连接标志
+        this.connected = false;
+
+        this.client = new net.Socket();
+        this.client.connect(this.port, this.server);
+
+        this.client.on('connect', () => {
+            console.info(`TCPClient CONNECTED TO: ${this.server}:${this.port}`);
+            logging.info(`TCPClient CONNECTED TO: ${this.server}:${this.port}`);
+            this.connected = true;
+        });
+
+        // 为客户端添加“data”事件处理函数
+        // data是服务器发回的数据
+        this.client.on('data', (data) => {
+            console.info(`TCPClient DATA: ${data}`);
+            logging.info(`TCPClient DATA: ${data}`);
+        });
+
+        // 为客户端添加“close”事件处理函数
+        this.client.on('close', () => {
+            this.connected = false;
+            console.info('TCPClient closed');
+            logging.info('TCPClient closed');
+        });
+
+        this.client.on('error', (error) => {
+            console.error(`TCPClient ERROR: ${error.message}`);
+            logging.error(`TCPClient ERROR: ${error.message}`);
+            this.client.destroy();
+        });
+    }
+
+    /**
+     * 发送数据
+     * @param {string} data 需要发送的数据
+     */
+    send(data) {
+        let rawData = '';
+        if (data === '') {
+            rawData = this.sendData;
+        } else {
+            rawData = data;
+        }
+        if (this.connected) {
+            this.client.write(rawData, () => {
+                console.info(`TCPClient SEND: ${rawData}`);
+                logging.info(`TCPClient SEND: ${rawData}`);
+            });
+        } else {
+            this.client.connect(this.port, this.server, () => {
+                this.client.write(rawData, () => {
+                    console.info(`TCPClient SEND: ${rawData}`);
+                    logging.info(`TCPClient SEND: ${rawData}`);
+                });
+            });
+        }
+    }
+}
+
 module.exports = {
     TCPServer,
+    TCPClient,
 };
