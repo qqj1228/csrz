@@ -229,12 +229,12 @@ function showMessage() {
  * 手动回退上一步
  */
 function preStep() {
-    console.info('Manual preStep');
-    logging.info('Manual preStep');
     gCurrentRow -= 2;
     if (gCurrentRow < 0) {
         gCurrentRow = 0;
     }
+    console.info(`Manual preStep: NO${gCurrentRow}`);
+    logging.info(`Manual preStep: NO${gCurrentRow}`);
     highLightShowData(gCurrentRow);
     if (gCurrentRow % ROWS === 0) {
         pageUp(false);
@@ -271,6 +271,9 @@ function sendVINMessage() {
     gTCPVIN.send('');
 }
 
+/**
+ * 进入下一个指示票，之前的指示票数据将会被舍弃
+ */
 function changeSheet() {
     gTCP.changeSheet();
     if (!gTCP.sheet || gTCP.sheet.length === 0) {
@@ -310,8 +313,8 @@ function changeSheet() {
 function nextStep(isManual) {
     showMessage();
     if (isManual) {
-        console.info('Manual nextStep');
-        logging.info('Manual nextStep');
+        console.info(`Manual nextStep: NO${gCurrentRow}`);
+        logging.info(`Manual nextStep: NO${gCurrentRow}`);
         highLightShowData(gCurrentRow);
     } else {
         if (gUdp.lastMessage[1] !== '0' || gUdp.recvMessage[1] !== '1' || !gCanRun) {
