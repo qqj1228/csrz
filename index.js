@@ -63,7 +63,7 @@ function fillTable(page) {
     if (gUsingTCP) {
         if (gTCP.sheet.length > 0) {
             if ($('#sheetMain').text() !== gTCP.sheet[0][2]) {
-                printCSV(gTCP.sheet[0][2]);
+                printCSV($('#sheetMain').text());
             }
             $('#sheetMain').text(gTCP.sheet[0][2]);
             $('#sheetSpare').text(gTCP.sheet[0][6]);
@@ -73,7 +73,7 @@ function fillTable(page) {
         }
     } else {
         if ($('#sheetMain').text() !== gXlsx.tireData.main[0][2]) {
-            printCSV(gXlsx.tireData.main[0][2]);
+            printCSV($('#sheetMain').text());
         }
         $('#sheetMain').text(gXlsx.tireData.main[0][2]);
         $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
