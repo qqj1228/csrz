@@ -10,9 +10,9 @@ const {version} = require('./package.json');
 
 const WHOLEROWS = 36; // 一张指示票完整记录数量
 const ROWS = 12; // 每页显示记录数量
-const PERIOD = 85; // 一辆车生产周期，秒
-const STOCKTIME = 128; // 备货时间，分钟
-const TRANSTIME = 40; // 运输时间，分钟
+// const PERIOD = 85; // 一辆车生产周期，秒
+// const STOCKTIME = 128; // 备货时间，分钟
+// const TRANSTIME = 40; // 运输时间，分钟
 let gCurrentPage = 1; // 当前显示页
 const xlsxDir = './excel'; // xlsx文件夹路径
 const prodIDFile = './prodID/prodID.xlsx'; // 品番-TPMSID对照表
@@ -35,15 +35,15 @@ let gCanRun = false; // 是否可以运行
  * 计算出货时间和到货时间, 返回值格式[出货时间, 到货时间], 包含日期的完整字符串
  * @param {string} firstTime 首台车时间，包含日期的完整字符串
  */
-function CalTime(firstTime) {
-    const time = [];
-    const t = new Date(firstTime);
-    t.setMinutes(t.getMinutes() + STOCKTIME, WHOLEROWS * PERIOD);
-    time[0] = t.toLocaleString('zh-CN', {hour12: false});
-    t.setMinutes(t.getMinutes() + TRANSTIME);
-    time[1] = t.toLocaleString('zh-CN', {hour12: false});
-    return time;
-}
+// function CalTime(firstTime) {
+//     const time = [];
+//     const t = new Date(firstTime);
+//     t.setMinutes(t.getMinutes() + STOCKTIME, WHOLEROWS * PERIOD);
+//     time[0] = t.toLocaleString('zh-CN', {hour12: false});
+//     t.setMinutes(t.getMinutes() + TRANSTIME);
+//     time[1] = t.toLocaleString('zh-CN', {hour12: false});
+//     return time;
+// }
 
 function printCSV(sheetName) {
     const csv = new PrintCSV(gProd.resultFile, gProd.printDir, sheetName);
@@ -67,9 +67,9 @@ function fillTable(page) {
             }
             $('#sheetMain').text(gTCP.sheet[0][2]);
             $('#sheetSpare').text(gTCP.sheet[0][6]);
-            const time = CalTime(`${gTCP.sheet[0][10]} ${gTCP.sheet[0][11]}`);
-            $('#shippingTime').text(time[0]);
-            $('#arrivalTime').text(time[1]);
+            // const time = CalTime(`${gTCP.sheet[0][10]} ${gTCP.sheet[0][11]}`);
+            // $('#shippingTime').text(time[0]);
+            // $('#arrivalTime').text(time[1]);
         }
     } else {
         if ($('#sheetMain').text() !== gXlsx.tireData.main[0][2]) {
@@ -77,9 +77,9 @@ function fillTable(page) {
         }
         $('#sheetMain').text(gXlsx.tireData.main[0][2]);
         $('#sheetSpare').text(gXlsx.tireData.spare[0][2]);
-        const time = CalTime(`${gXlsx.tireData.main[0][3]} ${gXlsx.tireData.main[0][4]}`);
-        $('#shippingTime').text(time[0]);
-        $('#arrivalTime').text(time[1]);
+        // const time = CalTime(`${gXlsx.tireData.main[0][3]} ${gXlsx.tireData.main[0][4]}`);
+        // $('#shippingTime').text(time[0]);
+        // $('#arrivalTime').text(time[1]);
     }
     $('tbody').children().remove();
     if (!gUsingTCP) {
