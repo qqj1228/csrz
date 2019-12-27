@@ -1,7 +1,7 @@
 {
   "name": "csrz",
-  "version": "2.2.2",
-  "description": "",
+  "version": "2.2.5",
+  "description": "长沙瑞智GMMC顺引指示系统",
   "main": "main.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",

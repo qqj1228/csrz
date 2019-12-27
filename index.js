@@ -55,6 +55,8 @@ function printCSV(sheetName) {
  * @param {number} page 当前页数，从1开始
  */
 function fillTable(page) {
+    console.info(`Enter fillTable, ver: ${version}`);
+    logging.info(`Enter fillTable, ver: ${version}`);
     const start = (page - 1) * ROWS;
     let end = page * ROWS;
     if (end > gTotalQty) {
@@ -264,10 +266,11 @@ function sendOPCMessage(force) {
  * 发送VIN消息
  */
 function sendVINMessage() {
-    if (gCurrentRow >= gTotalQty) {
+    if (gCurrentRow <= 0 && gCurrentRow > gTotalQty) {
         return;
     }
-    gTCPVIN.sendData = `VIN=${gTCP.sheet[gCurrentRow][0]},PROD=${gTCP.sheet[gCurrentRow][3]},`;
+    const index = gCurrentRow - 1;
+    gTCPVIN.sendData = `VIN=${gTCP.sheet[index][0]},PROD=${gTCP.sheet[index][3]},`;
     gTCPVIN.send('');
 }
 
@@ -300,7 +303,6 @@ function changeSheet() {
     gTotalQty = gTCP.sheet.length;
     highLightShowData(gCurrentRow);
     sendOPCMessage(false);
-    sendVINMessage();
     fillTable(gCurrentPage);
     gCurrentRow += 1;
     gIsEnd = false;
@@ -317,13 +319,15 @@ function nextStep(isManual) {
         logging.info(`Manual nextStep: NO${gCurrentRow}`);
         highLightShowData(gCurrentRow);
     } else {
+        if (gUdp.recvMessage[2] === '1') {
+            sendVINMessage();
+        }
         if (gUdp.lastMessage[1] !== '0' || gUdp.recvMessage[1] !== '1' || !gCanRun) {
             return;
         }
         $('#error-title').addClass('hidden');
         highLightShowData(gCurrentRow);
         sendOPCMessage(false);
-        sendVINMessage();
     }
     if (gCurrentRow % ROWS === 0 && gCurrentRow !== 0) {
         pageDown(false);
