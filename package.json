@@ -28,7 +28,7 @@
   "author": "Qian",
   "license": "GPL",
   "devDependencies": {
-    "electron": "^3.0.6",
+    "electron": "^9.1.0",
     "electron-builder": "^20.28.4",
     "eslint": "^5.8.0",
     "eslint-config-airbnb-base": "^13.1.0",
